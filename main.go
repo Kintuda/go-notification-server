@@ -18,14 +18,14 @@ func main() {
 		return
 	}
 
-	cfg, err := config.LoadWorkerCredentialsFromEnv()
+	cfg, err := config.LoadConfigFromEnv()
 
 	if err != nil {
 		logger.Error("error while loading envs", zap.Error(err))
 		return
 	}
 
-	database, err := db.NewDatabaseConnection(cfg.DatabaseUrl)
+	database, err := db.NewDatabaseConnection(cfg)
 
 	if err != nil {
 		logger.Error("error while connecting to the database", zap.Error(err))
@@ -64,9 +64,7 @@ func main() {
 	<-forever
 
 	defer func() {
-		if err := database.Close(); err != nil {
-			logger.Error("error while closing database connection")
-		}
+		database.CloseConnection()
 
 		if err := worker.Close(); err != nil {
 			logger.Error("error while closing amqp connection")

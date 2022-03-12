@@ -3,26 +3,44 @@ package database
 import (
 	"context"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/Kintuda/notification-server/config"
+	"github.com/jackc/pgx/v4/log/zapadapter"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"go.uber.org/zap"
 )
 
 type DatabaseConnection struct {
-	Conn *pgx.Conn
+	Conn *pgxpool.Pool
 }
 
-func NewDatabaseConnection(dns string) (*DatabaseConnection, error) {
+func NewDatabaseConnection(c *config.WorkerConfig) (*DatabaseConnection, error) {
 	var err error
-	database := &DatabaseConnection{}
 
-	database.Conn, err = pgx.Connect(context.Background(), dns)
+	config, err := pgxpool.ParseConfig(c.DatabaseUrl)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return database, nil
+	if c.DatabaseDebug {
+		logger, err := zap.NewProduction()
+
+		if err != nil {
+			return nil, err
+		}
+
+		config.ConnConfig.Logger = zapadapter.NewLogger(logger)
+	}
+
+	conn, err := pgxpool.ConnectConfig(context.Background(), config)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &DatabaseConnection{Conn: conn}, nil
 }
 
-func (d *DatabaseConnection) Close() error {
-	return d.Conn.Close(context.Background())
+func (d *DatabaseConnection) CloseConnection() {
+	d.Conn.Close()
 }

@@ -1,7 +1,9 @@
+install:
+	go mod download
 build:
 	go build -o bin/main main.go
-run:
-	go run main.go
+start:
+	go run main.go server
 migration_up:
 	migrate -path $(MIGRATIONS_PATH) -database "$(POSTGRESQL_URL)" -verbose up
 migration_down:
