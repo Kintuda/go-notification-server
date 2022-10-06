@@ -1,0 +1,53 @@
+openapi: 3.1.0
+info:
+  title: app_name
+  version: '1.0'
+servers:
+  - url: 'http://localhost:3000'
+paths:
+  /status:
+    parameters: []
+    get:
+      summary: Heathcheck
+      operationId: get-status
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/heathcheck'
+              examples:
+                example-1:
+                  value: {}
+            application/xml:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+      description: ''
+components:
+  schemas:
+    heathcheck:
+      description: ''
+      type: object
+      properties:
+        status:
+          type: string
+          minLength: 1
+        time:
+          type: string
+          minLength: 1
+      required:
+        - status
+        - time
+      x-examples:
+        example-1:
+          status: string
+          time: string
+      examples:
+        - status: string
+          time: string

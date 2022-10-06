@@ -1,11 +1,25 @@
 version: "3.8"
 services:
-    rabbitmq3:
-        container_name: "rabbitmq"
-        image: rabbitmq:3.8-management-alpine
-        environment:
-            - RABBITMQ_DEFAULT_USER=admin
-            - RABBITMQ_DEFAULT_PASS=admin
-        ports:
-            - '5672:5672'
-            - '15672:15672'
+  postgres:
+      image: postgres
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
+        - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      environment:
+        POSTGRES_DB: main
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+      ports:
+        - 5432:5432
+  rabbitmq3:
+    container_name: "rabbitmq"
+    image: rabbitmq:3.8-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+volumes:
+  postgres_data:
+      driver: local

@@ -1,0 +1,1 @@
+CREATE DATABASE notification_dev;
