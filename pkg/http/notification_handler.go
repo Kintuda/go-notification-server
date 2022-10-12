@@ -24,3 +24,23 @@ func (r *Router) SendNotification(c *gin.Context) {
 
 	c.JSON(201, webhook)
 }
+
+func (r *Router) SendNotificationAsync(c *gin.Context) {
+	payload := &notification.InitialWebhook{}
+
+	if err := c.ShouldBindJSON(payload); err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
+
+	webhook, err := r.NotificationService.SendWebhookAsynchronous(c.Request.Context(), *payload)
+
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
+
+	c.JSON(201, webhook)
+}

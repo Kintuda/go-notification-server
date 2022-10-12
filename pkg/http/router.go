@@ -12,7 +12,6 @@ type Router struct {
 	Engine              *gin.Engine
 	Cfg                 *config.AppConfig
 	DB                  *postgres.Pool
-	RabbitMQ            *queue.RabbitMQProvider
 	NotifierService     *notification.NotifierService
 	NotificationService *notification.NotificationService
 }
@@ -26,14 +25,13 @@ func NewRouter(cfg *config.AppConfig, db *postgres.Pool, rabbit queue.RabbitMQPr
 
 	repository := postgres.NewPostgresRepository(db)
 	notificationRepository := postgres.NewRepository[postgres.NotificationRepositoryPg](repository)
-	notificationService := notification.NewNotificationService(notificationRepository)
+	notificationService := notification.NewNotificationService(notificationRepository, &rabbit)
 	notifierService := notification.NewNotifierService(notificationRepository)
 
 	r := Router{
 		Engine:              router,
 		Cfg:                 cfg,
 		DB:                  db,
-		RabbitMQ:            &rabbit,
 		NotifierService:     notifierService,
 		NotificationService: notificationService,
 	}
@@ -47,4 +45,5 @@ func RegisterRoutes(r *Router) {
 	v1 := r.Engine.Group("v1")
 	v1.POST("/notifier", r.RegisterNotifier)
 	v1.POST("/notification", r.SendNotification)
+	v1.POST("/notification/async", r.SendNotificationAsync)
 }

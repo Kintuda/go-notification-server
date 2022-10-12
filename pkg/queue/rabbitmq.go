@@ -79,7 +79,7 @@ func NewRabbitMQ(params RabbitMQParams) (*RabbitMQProvider, error) {
 }
 
 func (r *RabbitMQProvider) Publish(ctx context.Context, contentType string, payload []byte) error {
-	err := r.Channel.PublishWithContext(ctx, r.ExchangeName, r.Name, false, false, amqp.Publishing{
+	err := r.Channel.PublishWithContext(ctx, r.ExchangeName, r.RoutingKey, false, false, amqp.Publishing{
 		ContentType: contentType,
 		Body:        payload,
 	})

@@ -10,15 +10,17 @@ import (
 	"time"
 
 	"github.com/Kintuda/notification-server/pkg/exception"
+	"github.com/Kintuda/notification-server/pkg/queue"
 	"github.com/google/uuid"
 )
 
 type NotificationService struct {
 	NotificationRepository NotificationRepository
+	QueueProvider          queue.QueueProvider
 }
 
-func NewNotificationService(repo NotificationRepository) *NotificationService {
-	return &NotificationService{NotificationRepository: repo}
+func NewNotificationService(repo NotificationRepository, provider queue.QueueProvider) *NotificationService {
+	return &NotificationService{NotificationRepository: repo, QueueProvider: provider}
 }
 
 func (n *NotificationService) SendWebhook(ctx context.Context, initial InitialWebhook) (*Webhook, error) {
@@ -57,6 +59,48 @@ func (n *NotificationService) SendWebhook(ctx context.Context, initial InitialWe
 	return &w, nil
 }
 
+func (n *NotificationService) SendWebhookAsynchronous(ctx context.Context, initial InitialWebhook) (*Webhook, error) {
+	notifier, err := n.NotificationRepository.FetchNotifier(ctx, initial.NotifierID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if notifier == nil {
+		return nil, &exception.ResourceNotFound{Identifier: initial.NotifierID, Resource: "notifier"}
+	}
+
+	w := Webhook{
+		ID:          uuid.NewString(),
+		NotifierID:  notifier.ID,
+		Payload:     initial.Payload,
+		MaxAttempts: notifier.MaxAttempts,
+		CreatedAt:   time.Now(),
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := n.NotificationRepository.CreateWebhookTransaction(ctx, w); err != nil {
+		return nil, err
+	}
+
+	u, err := json.Marshal(w)
+
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(u)
+
+	if err := n.QueueProvider.Publish(ctx, "text/plain", u); err != nil {
+		return nil, err
+	}
+
+	return &w, nil
+}
+
 func (n *NotificationService) DispatchWebhook(ctx context.Context, method string, URL string, payload []byte) (*WebhookResponse, error) {
 	client := &http.Client{}
 
@@ -78,7 +122,6 @@ func (n *NotificationService) DispatchWebhook(ctx context.Context, method string
 	bodyString := string(body)
 
 	if err != nil {
-		fmt.Println(bodyString)
 		return nil, err
 	}
 
